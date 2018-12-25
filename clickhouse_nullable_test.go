@@ -33,11 +33,11 @@ func Test_Nullable(t *testing.T) {
 		dml = `
 			INSERT INTO clickhouse_test_nullable (
 				int8,
-				int16, 
+				int16,
 				int32,
 				int64,
-				uint8, 
-				uint16, 
+				uint8,
+				uint16,
 				uint32,
 				uint64,
 				float32,
@@ -49,8 +49,8 @@ func Test_Nullable(t *testing.T) {
 				enum8,
 				enum16
 			) VALUES (
-				?, 
-				?, 
+				?,
+				?,
 				?,
 				?,
 				?,
@@ -68,13 +68,13 @@ func Test_Nullable(t *testing.T) {
 			)
 		`
 		query = `
-			SELECT 
-				int8, 
-				int16, 
+			SELECT
+				int8,
+				int16,
 				int32,
 				int64,
-				uint8, 
-				uint16, 
+				uint8,
+				uint16,
 				uint32,
 				uint64,
 				float32,
@@ -211,9 +211,9 @@ func Test_Nullable(t *testing.T) {
 					if tx, err := connect.Begin(); assert.NoError(t, err) {
 						if stmt, err := tx.Prepare(dml); assert.NoError(t, err) {
 							if _, err := stmt.Exec(
-								nil,
+								new(int8),
 								16,
-								nil,
+								new(int32),
 								64,
 								18,
 								116,
@@ -273,13 +273,13 @@ func Test_Nullable(t *testing.T) {
 								&Enum8,
 								&Enum16,
 							); assert.NoError(t, err) {
-								if assert.Nil(t, Int8) {
-									if assert.NotNil(t, Int16) {
+								if assert.NotNil(t, Int8) {
+									if assert.Equal(t, int8(0), *Int8) && assert.NotNil(t, Int16) {
 										assert.Equal(t, int16(16), *Int16)
 									}
 								}
-								if assert.Nil(t, Int32) {
-									if assert.NotNil(t, Int64) {
+								if assert.NotNil(t, Int32) {
+									if assert.Equal(t, int32(0), *Int32) && assert.NotNil(t, Int64) {
 										assert.Equal(t, int64(64), *Int64)
 									}
 								}

@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/kshvakov/clickhouse"
+	"github.com/kshvakov/clickhouse/lib/column"
+	"github.com/kshvakov/clickhouse/lib/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,12 +64,12 @@ func Test_Insert(t *testing.T) {
 		`
 		dml = `
 			INSERT INTO clickhouse_test_insert (
-				int8, 
-				int16, 
+				int8,
+				int16,
 				int32,
 				int64,
-				uint8, 
-				uint16, 
+				uint8,
+				uint16,
 				uint32,
 				uint64,
 				float32,
@@ -77,8 +79,8 @@ func Test_Insert(t *testing.T) {
 				date,
 				datetime
 			) VALUES (
-				?, 
-				?, 
+				?,
+				?,
 				?,
 				?,
 				?,
@@ -94,13 +96,13 @@ func Test_Insert(t *testing.T) {
 			)
 		`
 		query = `
-			SELECT 
-				int8, 
-				int16, 
+			SELECT
+				int8,
+				int16,
 				int32,
 				int64,
-				uint8, 
-				uint16, 
+				uint8,
+				uint16,
 				uint32,
 				uint64,
 				float32,
@@ -123,9 +125,9 @@ func Test_Insert(t *testing.T) {
 								uint8(1*i), uint16(2*i), uint32(4*i), uint64(8*i), // uint
 								1.32*float32(i), 1.64*float64(i), //float
 								fmt.Sprintf("string %d", i), // string
-								"RU",       //fixedstring,
-								time.Now(), //date
-								time.Now(), //datetime
+								"RU",                        //fixedstring,
+								time.Now(),                  //date
+								time.Now(),                  //datetime
 							)
 							if !assert.NoError(t, err) {
 								return
@@ -207,12 +209,12 @@ func Test_InsertBatch(t *testing.T) {
 		`
 		dml = `
 			INSERT INTO clickhouse_test_insert_batch (
-				int8, 
-				int16, 
+				int8,
+				int16,
 				int32,
 				int64,
-				uint8, 
-				uint16, 
+				uint8,
+				uint16,
 				uint32,
 				uint64,
 				float32,
@@ -223,8 +225,8 @@ func Test_InsertBatch(t *testing.T) {
 				datetime,
 				arrayString
 			) VALUES (
-				?, 
-				?, 
+				?,
+				?,
 				?,
 				?,
 				?,
@@ -253,9 +255,9 @@ func Test_InsertBatch(t *testing.T) {
 								uint8(1*i), uint16(2*i), uint32(4*i), uint64(8*i), // uint
 								1.32*float32(i), 1.64*float64(i), //float
 								fmt.Sprintf("string %d ", i), // string
-								"RU",       //fixedstring,
-								time.Now(), //date
-								time.Now(), //datetime
+								"RU",                         //fixedstring,
+								time.Now(),                   //date
+								time.Now(),                   //datetime
 								[]string{"A", "B", "C"},
 							)
 							if !assert.NoError(t, err) {
@@ -301,7 +303,7 @@ func Test_Select(t *testing.T) {
 			if _, err := connect.Exec(ddl); assert.NoError(t, err) {
 				if tx, err := connect.Begin(); assert.NoError(t, err) {
 					if stmt, err := tx.Prepare(dml); assert.NoError(t, err) {
-						if _, err := stmt.Exec(1, "RU", clickhouse.Date(time.Date(2017, 1, 20, 0, 0, 0, 0, time.Local)), time.Date(2017, 1, 20, 13, 0, 0, 0, time.Local)); !assert.NoError(t, err) {
+						if _, err := stmt.Exec(1, "RU", types.Date(time.Date(2017, 1, 20, 0, 0, 0, 0, time.Local)), time.Date(2017, 1, 20, 13, 0, 0, 0, time.Local)); !assert.NoError(t, err) {
 							return
 						}
 						if _, err := stmt.Exec(2, "UA", time.Date(2017, 1, 20, 0, 0, 0, 0, time.UTC), time.Date(2017, 1, 20, 14, 0, 0, 0, time.Local)); !assert.NoError(t, err) {
@@ -343,6 +345,42 @@ func Test_Select(t *testing.T) {
 								if err := row.Scan(&count); assert.NoError(t, err) {
 									assert.Equal(t, int(3), count)
 								}
+							}
+							if rows, err := connect.Query("SELECT id FROM clickhouse_test_select ORDER BY id LIMIT ?", 1); assert.NoError(t, err) {
+								i := 0
+								for rows.Next() {
+									var (
+										id int32
+									)
+									if err := rows.Scan(&id); assert.NoError(t, err) {
+										if i == 0 {
+											assert.Equal(t, id, int32(1))
+										} else {
+											t.Error("Should return exactly one record")
+										}
+									}
+									i++
+								}
+								rows.Close()
+							}
+							if rows, err := connect.Query("SELECT id FROM clickhouse_test_select ORDER BY id LIMIT ?,?", 1, 2); assert.NoError(t, err) {
+								i := 0
+								for rows.Next() {
+									var (
+										id int32
+									)
+									if err := rows.Scan(&id); assert.NoError(t, err) {
+										if i == 0 {
+											assert.Equal(t, id, int32(2))
+										} else if i == 1 {
+											assert.Equal(t, id, int32(3))
+										} else {
+											t.Error("Should return exactly two records")
+										}
+									}
+									i++
+								}
+								rows.Close()
 							}
 						}
 
@@ -437,11 +475,11 @@ func Test_ArrayT(t *testing.T) {
 		dml = `
 			INSERT INTO clickhouse_test_array (
 				int8,
-				int16, 
+				int16,
 				int32,
 				int64,
-				uint8, 
-				uint16, 
+				uint8,
+				uint16,
 				uint32,
 				uint64,
 				float32,
@@ -453,8 +491,8 @@ func Test_ArrayT(t *testing.T) {
 				enum8,
 				enum16
 			) VALUES (
-				?, 
-				?, 
+				?,
+				?,
 				?,
 				?,
 				?,
@@ -472,13 +510,13 @@ func Test_ArrayT(t *testing.T) {
 			)
 		`
 		query = `
-			SELECT 
-				int8, 
-				int16, 
+			SELECT
+				int8,
+				int16,
 				int32,
 				int64,
-				uint8, 
-				uint16, 
+				uint8,
+				uint16,
 				uint32,
 				uint64,
 				float32,
@@ -652,7 +690,7 @@ func Test_With_Totals(t *testing.T) {
 		`
 		dml   = `INSERT INTO clickhouse_test_with_totals (country) VALUES (?)`
 		query = `
-			SELECT 
+			SELECT
 				country,
 				COUNT(*)
 			FROM clickhouse_test_with_totals
@@ -886,12 +924,12 @@ func Test_Ternary_Operator(t *testing.T) {
 			}
 		}
 		if rows, err := connect.Query(`
-			SELECT 
-				a ? 
-					'+' : '-', 
+			SELECT
+				a ?
+					'+' : '-',
 				b ? '+' : '-' ,
 				a, b
-			FROM clickhouse_ternary_operator 
+			FROM clickhouse_ternary_operator
 				WHERE a = ? AND b < ? AND a IN(?,
 			?
 			) OR b = 0 OR b > ?`, 1, 2, 1, 100, -1); assert.NoError(t, err) {
@@ -924,7 +962,7 @@ func Test_UUID(t *testing.T) {
 				if _, err := tx.Exec(ddl); assert.NoError(t, err) {
 					if tx, err := connect.Begin(); assert.NoError(t, err) {
 						if stmt, err := tx.Prepare("INSERT INTO clickhouse_test_uuid VALUES(?)"); assert.NoError(t, err) {
-							if _, err := stmt.Exec(clickhouse.UUID("123e4567-e89b-12d3-a456-426655440000"), "123e4567-e89b-12d3-a456-426655440000"); !assert.NoError(t, err) {
+							if _, err := stmt.Exec(types.UUID("123e4567-e89b-12d3-a456-426655440000"), "123e4567-e89b-12d3-a456-426655440000"); !assert.NoError(t, err) {
 								t.Fatal(err)
 							}
 						}
@@ -936,13 +974,13 @@ func Test_UUID(t *testing.T) {
 					if rows, err := connect.Query("SELECT UUID, UUIDNumToString(UUID), Builtin FROM clickhouse_test_uuid"); assert.NoError(t, err) {
 						if assert.True(t, rows.Next()) {
 							var (
-								uuid        clickhouse.UUID
+								uuid        types.UUID
 								uuidStr     string
 								builtinUUID string
 							)
 							if err := rows.Scan(&uuid, &uuidStr, &builtinUUID); assert.NoError(t, err) {
 								if assert.Equal(t, "123e4567-e89b-12d3-a456-426655440000", uuidStr) {
-									assert.Equal(t, clickhouse.UUID("123e4567-e89b-12d3-a456-426655440000"), uuid)
+									assert.Equal(t, types.UUID("123e4567-e89b-12d3-a456-426655440000"), uuid)
 									assert.Equal(t, "123e4567-e89b-12d3-a456-426655440000", builtinUUID)
 								}
 							}
@@ -973,7 +1011,7 @@ func Test_IP(t *testing.T) {
 				if _, err := tx.Exec(ddl); assert.NoError(t, err) {
 					if tx, err := connect.Begin(); assert.NoError(t, err) {
 						if stmt, err := tx.Prepare("INSERT INTO clickhouse_test_ip VALUES(?, ?)"); assert.NoError(t, err) {
-							if _, err := stmt.Exec(clickhouse.IP(ipv4), clickhouse.IP(ipv6)); !assert.NoError(t, err) {
+							if _, err := stmt.Exec(column.IP(ipv4), column.IP(ipv6)); !assert.NoError(t, err) {
 								t.Fatal(err)
 							}
 						}
@@ -983,7 +1021,7 @@ func Test_IP(t *testing.T) {
 					}
 					if rows, err := connect.Query("SELECT IPv4, IPv6 FROM clickhouse_test_ip"); assert.NoError(t, err) {
 						if assert.True(t, rows.Next()) {
-							var v4, v6 clickhouse.IP
+							var v4, v6 column.IP
 							if err := rows.Scan(&v4, &v6); assert.NoError(t, err) {
 								if assert.Equal(t, ipv4, net.IP(v4)) {
 									assert.Equal(t, ipv6, net.IP(v6))
@@ -1065,6 +1103,52 @@ func Test_Timeout(t *testing.T) {
 				var value, value2 int
 				if assert.NoError(t, row.Scan(&value, &value2)) {
 					assert.Equal(t, int(1), value)
+				}
+			}
+		}
+	}
+}
+
+func Test_InArray(t *testing.T) {
+	const (
+		ddl = `
+			CREATE TABLE clickhouse_test_in_array (
+				Value String
+			) Engine=Memory
+		`
+		dml = `
+			INSERT INTO clickhouse_test_in_array (Value) VALUES (?)
+		`
+		query = `
+			SELECT
+				groupArray(Value)
+			FROM clickhouse_test_in_array WHERE Value IN(?)
+		`
+	)
+	if connect, err := sql.Open("clickhouse", "tcp://127.0.0.1:9000?debug=true"); assert.NoError(t, err) && assert.NoError(t, connect.Ping()) {
+		if _, err := connect.Exec("DROP TABLE IF EXISTS clickhouse_test_in_array"); assert.NoError(t, err) {
+			if _, err := connect.Exec(ddl); assert.NoError(t, err) {
+				if tx, err := connect.Begin(); assert.NoError(t, err) {
+					if stmt, err := tx.Prepare(dml); assert.NoError(t, err) {
+						for _, v := range []string{"A", "B", "C"} {
+							_, err = stmt.Exec(v)
+							if !assert.NoError(t, err) {
+								return
+							}
+						}
+					} else {
+						return
+					}
+					if assert.NoError(t, tx.Commit()) {
+						var value []string
+						if err := connect.QueryRow(query, []string{"A", "C"}).Scan(&value); assert.NoError(t, err) {
+							if !assert.NoError(t, err) {
+								return
+							}
+						}
+						assert.Equal(t, []string{"A", "C"}, value)
+
+					}
 				}
 			}
 		}
