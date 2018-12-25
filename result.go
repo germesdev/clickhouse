@@ -1,9 +1,5 @@
 package clickhouse
 
-import (
-	"fmt"
-)
-
 type result struct{}
 
 func (*result) LastInsertId() (int64, error) {
